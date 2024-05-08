@@ -24,6 +24,7 @@ const MovieDB = (function() {
 
     // Private functions.
 
+    // Generic function to get data from a given resource.
     async function _getData(resource) {
         // Wait until the response promise returned by fetch is completed.
         const response = await fetch(resource);
@@ -88,7 +89,7 @@ const MovieDB = (function() {
         params = params === undefined ? {} : params;
         _initParams(this._, params);
 
-        // Set the sortBy property 
+        // Set the sortBy property. 
         this._(_key).sortBy = this._(_key).params.sort_by;
     };
     
@@ -97,11 +98,13 @@ const MovieDB = (function() {
     _MovieDB.prototype = {
 
         getMovies: async function(page) {
+            // Set the page to display.
             page = page === undefined ? 1 : page;
-
+            // Set the filters.
             const with_genres = this._(_key).filters.genres.length ? '&with_genres=' + this._(_key).filters.genres.join(',') : '';
             const primary_release_date = this._(_key).filters.years.length ? '&primary_release_date.gte=' + this._(_key).filters.years[0] + '-01-01&primary_release_date.lte=' + this._(_key).filters.years[1] + '-12-31' : '';
 
+            // Build the resource.
             const resource = this._(_key).apiBaseUrl + 'discover/movie?api_key=' +
                              this._(_key).apiKey +
                              '&include_adult=' + this._(_key).params.include_adult + 
@@ -119,6 +122,7 @@ const MovieDB = (function() {
 
         getMovie: async function(id) {
             const resource = this._(_key).apiBaseUrl + 'movie/' + id + '?api_key=' + this._(_key).apiKey +
+                            '&append_to_response=credits' + // cast + crew 
                             '&language=' + this._(_key).params.language;
 
             const data = await _getData(resource);
@@ -187,6 +191,7 @@ const MovieDB = (function() {
         },
 
         setYears: function(years) {
+            // Make sure the given parameter is valid.
             if (!Array.isArray(years) || years.length != 2) {
                 console.log('Error: years parameter must be of type Array and must contained 2 elements.')
                 return;

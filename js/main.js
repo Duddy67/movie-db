@@ -1,5 +1,8 @@
 
+// Source: https://github.com/samuelmideksa/movv
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Set the api key.
     const apiKey = 'API_KEY';
     // Base URL for TMDb images with size preference w500
     const baseImageUrl = 'https://image.tmdb.org/t/p/w500';
@@ -42,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Check for pagination.
-    document.getElementById('see-more').addEventListener('click', (e) => {
+    document.getElementById('more').addEventListener('click', (e) => {
         // Set the next page number.
         e.target.dataset.page = parseInt(e.target.dataset.page) + 1;
 
@@ -170,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createSortTypeOptions(api);
 
+    // Check for the change of sort type.
     document.getElementById('sortBy').addEventListener('change', (e) => {
         api.setSortBy(e.target.value);
         resetMovieList(api);
@@ -296,11 +300,11 @@ function buildMovieList(data, api) {
         cardBody.className = 'card-body';
 
         let cardTitle = document.createElement('h5');
-        cardTitle.className = 'card-title';
+        cardTitle.className = 'card-title fw-bold';
         cardTitle.textContent = value.title;
 
         let cardText = document.createElement('p');
-        cardText.className = 'card-text fs-6';
+        cardText.className = 'card-text fs-6 mb-1';
         cardText.textContent = value.release_date;
 
         let cardVote = document.createElement('p');
@@ -314,6 +318,14 @@ function buildMovieList(data, api) {
         card.appendChild(cardBody);
         document.getElementById('appendData').appendChild(card);
     });
+
+    if (document.getElementById('appendData').childNodes.length == 0) {
+        // Hide the "More" button if the list is empty.
+        document.getElementById('more').style.display = 'none';
+    }
+    else {
+        document.getElementById('more').style.display = 'block';
+    }
 }
 
 function createSortTypeOptions(api) {
@@ -341,7 +353,27 @@ function openMovieModal(movie, baseImageUrl) {
     const modalReleaseDate = document.getElementById('modalReleaseDate');
     const modalRuntime = document.getElementById('modalRuntime');
     const modalOverview = document.getElementById('modalOverview');
+    const modalDirector = document.getElementById('modalDirector');
+    const modalCasting = document.getElementById('modalCasting');
     const modalVoteAverage = document.getElementById('modalVoteAverage');
+
+    // Get the casting (the 4 first actors) and the director name.
+
+    let casting = '';
+
+    for (let i = 0; i < movie.credits.cast.length; i++) {
+        casting = casting + movie.credits.cast[i].name;
+
+        if (i < 3) {
+            casting = casting + ', ';
+        }
+        else {
+            casting = casting + '...';
+            break;
+        }
+    }
+
+    let director = movie.credits.crew.filter(function(crew) { return crew.job == 'Director'; });
 
     // Populate modal
     modalTitle.textContent = `${movie.title} (${new Date(movie.release_date).getFullYear()})`;
@@ -349,7 +381,9 @@ function openMovieModal(movie, baseImageUrl) {
     modalReleaseDate.textContent = movie.release_date;
     modalRuntime.textContent = `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}min`;
     modalOverview.textContent = movie.overview;
-    modalVoteAverage.textContent = movie.vote_average;
+    modalDirector.textContent = director[0].name;
+    modalCasting.textContent = casting;
+    modalVoteAverage.textContent = movie.vote_average.toFixed(1);
 
     // Open the modal
     const movieModal = new bootstrap.Modal(document.getElementById('movieModal'));
