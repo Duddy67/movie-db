@@ -42,8 +42,26 @@ const MovieDB = (function() {
     function _initProperties(_) {
         _(_key).params = {};
         _(_key).apiBaseUrl = 'https://api.themoviedb.org/3/';
+        _(_key).baseImageUrl = 'https://image.tmdb.org/t/p/';
         _(_key).filters = { 'genres': [], 'years': [], 'casts': [] };
-        //_(_key).baseImageUrl = 'https://image.tmdb.org/t/p/w500';
+        _(_key).sortBy = '';
+        _(_key).sortTypes = [
+            {'value': 'original_title.asc', 'text': 'Original title asc'},
+            {'value': 'original_title.desc', 'text': 'Original title desc'},
+            {'value': 'popularity.asc', 'text': 'Popularity asc'},
+            {'value': 'popularity.desc', 'text': 'Popularity desc'},
+            {'value': 'revenue.asc', 'text': 'Revenue asc'},
+            {'value': 'revenue.desc', 'text': 'Revenue desc'},
+            {'value': 'primary_release_date.asc', 'text': 'Primary release date asc'},
+            {'value': 'primary_release_date.desc', 'text': 'Primary release date desc'},
+            {'value': 'title.asc', 'text': 'Title asc'},
+            {'value': 'title.desc', 'text': 'Title desc'},
+            {'value': 'vote_average.asc', 'text': 'Vote average asc'},
+            {'value': 'vote_average.desc', 'text': 'Vote average desc'},
+            {'value': 'vote_count.asc', 'text': 'Vote count asc'},
+            {'value': 'vote_count.desc', 'text': 'Vote count desc'},
+        ];
+
     }
 
     /*
@@ -69,6 +87,9 @@ const MovieDB = (function() {
         _initProperties(this._);
         params = params === undefined ? {} : params;
         _initParams(this._, params);
+
+        // Set the sortBy property 
+        this._(_key).sortBy = this._(_key).params.sort_by;
     };
     
     // Public functions.
@@ -87,7 +108,7 @@ const MovieDB = (function() {
                              '&include_video=' + this._(_key).params.include_video + 
                              '&language=' + this._(_key).params.language +
                              with_genres + 
-                             '&sort_by=' + this._(_key).params.sort_by + 
+                             '&sort_by=' + this._(_key).sortBy + 
                              primary_release_date + 
                              '&page=' + page;
 
@@ -174,8 +195,29 @@ const MovieDB = (function() {
             this._(_key).filters.years = years;
         },
 
+        getYears: function() {
+            return this._(_key).filters.years;
+        },
+
         resetYears: function() {
             this._(_key).filters.years = [];
+        },
+
+        getBaseImageUrl: function(size) {
+            size = size === undefined ? '' : size;
+            return this._(_key).baseImageUrl + size;
+        },
+
+        getSortTypes: function() {
+            return this._(_key).sortTypes;
+        },
+
+        getSortBy: function() {
+            return this._(_key).sortBy;
+        },
+
+        setSortBy: function(sortType) {
+            return this._(_key).sortBy = sortType;
         }
     };
 
