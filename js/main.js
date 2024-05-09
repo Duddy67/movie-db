@@ -3,7 +3,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // Set the api key.
-    const apiKey = '1bb5412e096ed7b8f925af4db6ca2ffb';
+    const apiKey = 'API_KEY';
     // Base URL for TMDb images with size preference w500
     const baseImageUrl = 'https://image.tmdb.org/t/p/w500';
 
