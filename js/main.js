@@ -3,7 +3,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // Set the api key.
-    const apiKey = 'API_KEY';
+    const apiKey = '1bb5412e096ed7b8f925af4db6ca2ffb';
     // Base URL for TMDb images with size preference w500
     const baseImageUrl = 'https://image.tmdb.org/t/p/w500';
 
@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const api = new MovieDB.init(apiKey, params);
-
     // Some filters can be set before the initial api call.
     // For instance, this will return the movies with drama and comedy genre 
     // and released from 1970 to 1977
@@ -49,11 +48,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set the next page number.
         e.target.dataset.page = parseInt(e.target.dataset.page) + 1;
 
-        api.getMovies(e.target.dataset.page).then(data => {
-            buildMovieList(data, api);
-        }).catch(error => {
-            console.log('Promise rejected', error.message);
-        });
+        // Get the next page of search result.
+        if (document.getElementById('searchKey').value.length) {
+            api.searchByTitle(document.getElementById('searchKey').value, e.target.dataset.page).then(data => {
+                buildMovieList(data, api);
+            }).catch(error => {
+                console.log('Promise rejected', error.message);
+            });
+        }
+        // Get the next movie page.
+        else {
+            api.getMovies(e.target.dataset.page).then(data => {
+                buildMovieList(data, api);
+            }).catch(error => {
+                console.log('Promise rejected', error.message);
+            });
+        }
     });
 
     // Listen to click events from genre buttons.
@@ -111,6 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 toYear.value = '';
                 fromYear.value = '';
                 toYear.disabled = true;
+            }
+
+            if (e.target.dataset.resetType == 'search') {
+                // Reset all the search parameters.
+                document.getElementById('searchByTitle').value = '';
+                document.getElementById('searchKey').value = '';
+                // Display the filters again.
+                document.getElementById('filters').style.display = 'block';
             }
 
             resetMovieList(api);
@@ -177,6 +195,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sortBy').addEventListener('change', (e) => {
         api.setSortBy(e.target.value);
         resetMovieList(api);
+    });
+
+    // Check for the search by title.
+    document.getElementById('searchByTitle').addEventListener('keydown', (e) => {
+        let searchKey = e.target.value;
+
+        // The Enter key has been pressed. 
+        if (e.keyCode == 13) {
+            // Remove all the movies from the list.
+            document.getElementById('appendData').innerHTML = '';
+
+            // Run the search.
+            api.searchByTitle(searchKey).then(data => {
+                // Set the hidden input search key.
+                document.getElementById('searchKey').value = searchKey;
+                buildMovieList(data, api);
+                // Hide the filters as they are not taken into account when seaching.
+                document.getElementById('filters').style.display = 'none';
+            }).catch(error => {
+                console.log('Promise rejected', error.message);
+            });
+        }
     });
 });
 
@@ -319,8 +359,8 @@ function buildMovieList(data, api) {
         document.getElementById('appendData').appendChild(card);
     });
 
-    if (document.getElementById('appendData').childNodes.length == 0) {
-        // Hide the "More" button if the list is empty.
+    if (document.getElementById('appendData').childNodes.length == 0 || document.getElementById('appendData').childNodes.length < 20 || data.results.length == 0) {
+        // Hide the "More" button if the list is empty or has less than 20 movies or the given data is empty.
         document.getElementById('more').style.display = 'none';
     }
     else {

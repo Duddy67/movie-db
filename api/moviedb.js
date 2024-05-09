@@ -130,23 +130,6 @@ const MovieDB = (function() {
             return data;
         },
 
-        getTVShows: async function(page) {
-            page = page === undefined ? 1 : page;
-            const resource = this._(_key).apiBaseUrl + 'discover/tv?api_key=' +
-                             this._(_key).apiKey +
-                             '&include_adult=false&include_video=false&language=en-US&sort_by=popularity.desc&page=' + page;
-
-            const data = await _getData(resource);
-            return data;
-        },
-
-        getTVShow: async function(id) {
-            const resource = this._(_key).apiBaseUrl + 'tv/' + id + '?api_key=' + this._(_key).apiKey + '&language=en-US';
-
-            const data = await _getData(resource);
-            return data;
-        },
-
         getGenreList: async function() {
             const resource = this._(_key).apiBaseUrl + 'genre/movie/list?api_key=' +
                              this._(_key).apiKey +
@@ -223,6 +206,18 @@ const MovieDB = (function() {
 
         setSortBy: function(sortType) {
             return this._(_key).sortBy = sortType;
+        },
+
+        searchByTitle: async function(title, page) {
+            page = page === undefined ? 1 : page;
+
+            const resource = this._(_key).apiBaseUrl + 'search/movie?api_key=' +
+                             this._(_key).apiKey + 
+                             '&query=' + title +
+                             '&page=' + page;
+
+            const data = await _getData(resource);
+            return data;
         }
     };
 
