@@ -25,7 +25,7 @@ const MovieDB = (function() {
     // Private functions.
 
     // Generic function to get data from a given resource.
-    async function _getData(resource) {
+    async function _getData(resource, responseType) {
         // Wait until the response promise returned by fetch is completed.
         const response = await fetch(resource);
 
@@ -34,8 +34,9 @@ const MovieDB = (function() {
             throw new Error('Couldn\'t fetch the data. status: ' + response.status);
         }
 
+        const type = responseType === undefined ? 'json' : responseType;
         // Wait until the promise returned by the response object is completed.
-        const data = await response.json();
+        const data = await response[type]();
 
         return data;
     }
@@ -44,7 +45,7 @@ const MovieDB = (function() {
         _(_key).params = {};
         _(_key).apiBaseUrl = 'https://api.themoviedb.org/3/';
         _(_key).baseImageUrl = 'https://image.tmdb.org/t/p/';
-        _(_key).filters = { 'genres': [], 'years': [], 'casts': [] };
+        _(_key).filters = { 'genres': [], 'years': [], 'countries': [] };
         _(_key).sortBy = '';
         _(_key).sortTypes = [
             {'value': 'original_title.asc', 'text': 'Original title asc'},
@@ -62,7 +63,10 @@ const MovieDB = (function() {
             {'value': 'vote_count.asc', 'text': 'Vote count asc'},
             {'value': 'vote_count.desc', 'text': 'Vote count desc'},
         ];
-
+        // Countries that return no movie at all. Thus it's useless to use them in the country filter.
+        _(_key).noMovieCountries = [
+            'CK','HM','NF','PM','PN','PW','TF','ZR'
+        ];
     }
 
     /*
@@ -103,6 +107,7 @@ const MovieDB = (function() {
             // Set the filters.
             const with_genres = this._(_key).filters.genres.length ? '&with_genres=' + this._(_key).filters.genres.join(',') : '';
             const primary_release_date = this._(_key).filters.years.length ? '&primary_release_date.gte=' + this._(_key).filters.years[0] + '-01-01&primary_release_date.lte=' + this._(_key).filters.years[1] + '-12-31' : '';
+            const with_origin_country = this._(_key).filters.countries.length ? '&with_origin_country=' + this._(_key).filters.countries.join('|') : '';
 
             // Build the resource.
             const resource = this._(_key).apiBaseUrl + 'discover/movie?api_key=' +
@@ -113,6 +118,7 @@ const MovieDB = (function() {
                              with_genres + 
                              '&sort_by=' + this._(_key).sortBy + 
                              primary_release_date + 
+                             with_origin_country + 
                              '&page=' + page;
 
             const data = await _getData(resource);
@@ -189,6 +195,38 @@ const MovieDB = (function() {
 
         resetYears: function() {
             this._(_key).filters.years = [];
+        },
+
+        getCountryList: async function() {
+            const resource = this._(_key).apiBaseUrl + 'configuration/countries?api_key=' +
+                             this._(_key).apiKey +
+                             '&language=' + this._(_key).params.language;
+
+            const data = await _getData(resource);
+
+            return data;
+        },
+
+        getCountries: function() {
+            return this._(_key).filters.countries;
+        },
+
+        updateCountries: function(countries) {
+            // Make sure the given parameter is an array.
+            if (!Array.isArray(countries)) {
+                console.log('Error: countries parameter must be of type Array.')
+                return;
+            }
+
+            this._(_key).filters.countries = countries;
+        },
+
+        resetCountries: function() {
+            this._(_key).filters.countries = [];
+        },
+
+        getNoMovieCountries: function() {
+            return this._(_key).noMovieCountries;
         },
 
         getBaseImageUrl: function(size) {

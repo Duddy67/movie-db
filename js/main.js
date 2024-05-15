@@ -2,30 +2,62 @@
 // Source: https://github.com/samuelmideksa/movv
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Set the api key.
-    const apiKey = 'API_KEY';
-    // Base URL for TMDb images with size preference w500
-    const baseImageUrl = 'https://image.tmdb.org/t/p/w500';
 
-    const params = {
-        //'language': 'fr-FR', 
-        'include_adult': false,
-    };
+    // Get the user's authorization token.
+    const authToken = getAuthToken();
 
-    const api = new MovieDB.init(apiKey, params);
-    // Some filters can be set before the initial api call.
-    // For instance, this will return the movies with drama and comedy genre 
-    // and released from 1970 to 1977
+    // Check the token is still active.
+    if (authToken.length === 0) {
+        // Redirect to the login page.
+        window.location.replace(window.location.origin + '/movie-db/login.php');
+    }
 
-    api.addGenres([18, 35]);
-    api.setYears([1970, 1977]);
+    let api = null;
 
-    // Run the initial api call.
-    api.getMovies().then(data => {
+    // Retrieve the tmdb api key.
+    getApiKey(authToken).then(apiKey => {
+        // Set some parameters.
+        const params = {
+            //'language': 'fr-FR',
+            'include_adult': false,
+        };
+
+        // Create an TvShowDB instance.
+        api = new MovieDB.init(apiKey, params);
+
+        // Some filters can be set before the initial api call.
+        // For instance, this will return the french movies with drama and comedy genre
+        // and released from 1970 to 1977
+
+        api.addGenres([18, 35]);
+        //api.setYears([1970, 1977]);
+        //api.updateCountries(['FR']);
+
+        // Run the initial api call.
+        return api.getMovies();
+    }).then(data => {
+        // Create the list with the retrieved data.
         buildMovieList(data, api);
+
+        // Get the genre list from the tmdb api.
+        return api.getGenreList();
+    }).then(data => {
+        // Create the genre button board.
+        createGenreButtons(data.genres, api.getGenres());
+
+        // Create some filters.
+
+        createYearFilterLists(api);
+        createSortTypeOptions(api);
+
+        return api.getCountryList();
+    }).then(data => {
+        createCountryList(data, api);
     }).catch(error => {
         console.log('Promise rejected', error.message);
     });
+
+    // Add event listeners to the application elements.
 
     // Listen to click events coming from inside the movie cards.
     document.getElementById('appendData').addEventListener('click', (e) => {
@@ -36,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fetch the movie from its id.
             api.getMovie(clickedCard.dataset.movieId).then(data => {
                 // Display the movie details in a modal window.
-                openMovieModal(data, baseImageUrl);
+                openMovieModal(data, api);
             }).catch(error => {
                 console.log('Promise rejected', error.message);
             });
@@ -123,6 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 toYear.disabled = true;
             }
 
+            if (e.target.dataset.resetType == 'countries') {
+                api.resetCountries();
+                document.getElementById('countries').selectedIndex = -1;
+            }
+
             if (e.target.dataset.resetType == 'search') {
                 // Reset all the search parameters.
                 document.getElementById('searchByTitle').value = '';
@@ -134,15 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
             resetMovieList(api);
         });
     });
-
-    // Get the genre list from the API then build the genre buttons.
-    api.getGenreList().then(data => {
-        createGenreButtons(data.genres, api.getGenres());
-    }).catch(error => {
-        console.log('Promise rejected: ', error.message);
-    });
-
-    createYearFilterLists(api);
 
     // Checks for change events in the fromYear and toYear drop down lists. 
     document.getElementById('filterByYears').addEventListener('change', (e) => {
@@ -189,7 +217,19 @@ document.addEventListener('DOMContentLoaded', () => {
         resetMovieList(api);
     });
 
-    createSortTypeOptions(api);
+    document.getElementById('filterByCountries').addEventListener('click', (e) => {
+        const select = e.target.parentElement;
+        let countries = [];
+
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].selected) {
+                countries.push(select.options[i].value);
+            }
+        }
+
+        api.updateCountries(countries);
+        resetMovieList(api);
+    });
 
     // Check for the change of sort type.
     document.getElementById('sortBy').addEventListener('change', (e) => {
@@ -220,6 +260,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+
+function getAuthToken() {
+    const name = 'auth_token';
+    // Retrieve the authentication token from the session cookie
+    return document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || '';
+}
+
+async function getApiKey(authToken) {
+    // Make a request to your PHP endpoint with the authentication token
+    const response = await fetch(window.location.origin + '/movie-db/backend/data.php', {
+                               method: 'GET',
+                               headers: {
+                                   'Authorization': `Bearer ${authToken}`
+                               }
+                           });
+
+    // Throw an error in case the response status is different from 200 (ie: OK).
+    if (response.status !== 200) {
+        throw new Error('Couldn\'t fetch the data. status: ' + response.status);
+    }
+
+    const result = await response.text();
+
+    if (result.startsWith('Error')) {
+        throw new Error('Couldn\'t get the api key: ' + result);
+    }
+
+    return result;
+}
 
 function resetMovieList(api) {
     // Remove all the movies from the list.
@@ -314,8 +383,51 @@ function createYearFilterLists(api) {
         toYear.appendChild(clone);
     });
 
+    let fromLabel = document.createElement('label');
+    fromLabel.setAttribute('for', 'fromYear');
+    fromLabel.appendChild(document.createTextNode('From first air year'));
+
+    document.getElementById('fromYearList').appendChild(fromLabel);
     document.getElementById('fromYearList').appendChild(fromYear);
+
+    let toLabel = document.createElement('label');
+    toLabel.setAttribute('for', 'toYear');
+    toLabel.appendChild(document.createTextNode('To first air year'));
+
+    document.getElementById('toYearList').appendChild(toLabel);
     document.getElementById('toYearList').appendChild(toYear);
+}
+
+function createCountryList(countries, api) {
+    let label = document.createElement('label');
+    label.setAttribute('for', 'countries');
+    label.appendChild(document.createTextNode('Countries'));
+
+    let select = document.createElement('select');
+    select.className = 'form-select';
+    select.setAttribute('name', 'countries');
+    select.setAttribute('id', 'countries');
+    select.setAttribute('multiple', 'multiple');
+
+    const noMovieCountries = api.getNoMovieCountries();
+    const selected = api.getCountries();
+
+    countries.forEach((country) => {
+        if (!noMovieCountries.includes(country.iso_3166_1)) {
+            let option = document.createElement('option');
+            option.value = country.iso_3166_1;
+            option.text = country.native_name;
+
+            if (selected.includes(country.iso_3166_1)) {
+                option.selected = true;
+            }
+
+            select.appendChild(option);
+        }
+    });
+
+    document.getElementById('filterByCountries').appendChild(label);
+    document.getElementById('filterByCountries').appendChild(select);
 }
 
 function buildMovieList(data, api) {
@@ -387,7 +499,7 @@ function createSortTypeOptions(api) {
 }
 
 // Function to open the modal and populate it with movie details
-function openMovieModal(movie, baseImageUrl) {
+function openMovieModal(movie, api) {
     const modalTitle = document.getElementById('movieModalLabel');
     const modalPoster = document.getElementById('modalPoster');
     const modalReleaseDate = document.getElementById('modalReleaseDate');
@@ -417,7 +529,7 @@ function openMovieModal(movie, baseImageUrl) {
 
     // Populate modal
     modalTitle.textContent = `${movie.title} (${new Date(movie.release_date).getFullYear()})`;
-    modalPoster.src = `${baseImageUrl}${movie.poster_path}`;
+    modalPoster.src = `${api.getBaseImageUrl('w500')}${movie.poster_path}`;
     modalReleaseDate.textContent = movie.release_date;
     modalRuntime.textContent = `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}min`;
     modalOverview.textContent = movie.overview;
