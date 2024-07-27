@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Create an TvShowDB instance.
-        api = new MovieDB.init(apiKey, params);
+        api = new MovieDB(apiKey, params);
 
         // Some filters can be set before the initial api call.
         // For instance, this will return the french movies with drama and comedy genre

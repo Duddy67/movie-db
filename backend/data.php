@@ -25,7 +25,7 @@ function login()
     $credentials = ['login' => 'john.doe@domain.com', 'passwd' => 'secret'];
 
     if ($_POST['login'] != $credentials['login'] && $_POST['passwd'] != $credentials['passwd']) {
-        Redirect('https://'.$_SERVER['HTTP_HOST'].'/tvshow-db/login.php?invalid_credentials');
+        Redirect('https://'.$_SERVER['HTTP_HOST'].'/movie-db/login.php?invalid_credentials');
     } 
 
     // Create the token.
@@ -39,7 +39,7 @@ function login()
     fclose($file);
 
     // Redirect to the TvShowDB application.
-    Redirect('https://'.$_SERVER['HTTP_HOST'].'/tvshow-db');
+    Redirect('https://'.$_SERVER['HTTP_HOST'].'/movie-db');
 }
 
 function getApiKey()

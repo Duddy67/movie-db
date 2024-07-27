@@ -35,7 +35,7 @@
           <?php else : ?>
               <div class="row mb-5">
                   <div class="">You're already logged in.</div>
-                  <a href="<?php echo 'https://'.$_SERVER['HTTP_HOST'].'/tvshow-db'; ?>" class="btn btn-success">Return</a>
+                  <a href="<?php echo 'https://'.$_SERVER['HTTP_HOST'].'/movie-db'; ?>" class="btn btn-success">Return</a>
               </div>
           <?php endif; ?>
       </div>
